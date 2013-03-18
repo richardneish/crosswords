@@ -1,16 +1,21 @@
 var env=require('system').env;
 var fs=require('fs');
-var page = require('webpage').create();
+var page = createPage();
 
-page.settings.loadImages=false;
-page.settings.userAgent='Mozilla/5.0 (Windows NT 5.1; rv:19.0) Gecko/20100101 Firefox/19.0';
-page.onConsoleMessage = function(msg, lineNum, sourceId) {
-    console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
-};
+function createPage() {
+  var page = require('webpage').create();
 
-var state = new Object();
+  page.settings.loadImages=false;
+  page.settings.userAgent='Mozilla/5.0 (Windows NT 5.1; rv:19.0) Gecko/20100101 Firefox/19.0';
+  page.onConsoleMessage = function(msg, lineNum, sourceId) {
+      console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
+  };
+  return page;
+}
+
+var state = {};
 function reset() {
-  state = new Object();
+  state = {};
 }
 
 function fail(msg) {
@@ -102,7 +107,7 @@ function search(next_step) {
     state['type'], function(status) {
     console.log('Search page loaded.  Logged in:' + isLoggedIn());
     snapshot('search');
-    var result_link = page.evaluate(function(dateString) {
+    state['puzzle_id'] = page.evaluate(function(dateString) {
       // Get the link for given date.
       var links = document.querySelectorAll('table#search_results_table a');
       for (var i=1; i<links.length; i+=3) {
@@ -110,32 +115,33 @@ function search(next_step) {
         if (links[i].textContent == dateString) {
           var link_href=links[i].getAttribute('href');
           console.log('Found link.  Href=' + link_href);
-          return link_href;
+          var pos = link_href.indexOf('?id=');
+          if (pos === -1) {
+            console.log('Failed to find puzzle id.');
+            return null;
+          }
+          var puzzle_id=link_href.substring(pos+4);
+          return puzzle_id;
         }
       }
       return null;
     }, dateString);
-    console.log('Following result link: ' + result_link);
-    page.open(puzzle_link, function(status) {
-      if (status !== 'success') {
-        fail('Failed to open puzzle link [' + result_link + '].');
-      }
-      snapshot('puzzle_links');
-      state['puzzle_link'] = page.evaluate(function() {
-
-      });
-    });
+    if (state['puzzle_id'] === null) {
+      fail('Failed to find puzzle id.');
+    }
+    console.log('Got puzzle_id: [' + state['puzzle_id'] + ']');
     next_step();
   });  
 }
 
 function download_puzzle(next_step) {
-  var puzzle_link='http://puzzles.telegraph.co.uk/site/print_crossword?id=' +
+  var puzzle_link='http://puzzles.telegraph.co.uk/site/print_crossword.php?id=' +
     state['puzzle_id'];
   console.log('Downloading ' + state['type'] + ' crossword from link ' + puzzle_link);
   page.open(puzzle_link, function(status) {
     if (status === 'success') {
-      state['puzzle_html'] = page.content();
+      console.log('Downloaded puzzle HTML with length:' + page.content.length);
+      state['puzzle_html'] = page.content;
       next_step();
     } else {
       fail('Failed to download puzzle.');
@@ -144,12 +150,13 @@ function download_puzzle(next_step) {
 }
 
 function download_solution(next_step) {
-  var solution_link='http://puzzles.telegraph.co.uk/site/print_crossword.php?id=' + 
-    state['puzzle_link'] + '&action=solution';
+  var solution_link='http://puzzles.telegraph.co.uk/site/print_crossword.php?id=' +
+    state['puzzle_id'] + '&action=solution';
   console.log('Downloading ' + state['type'] + ' solution from link ' + solution_link);
   page.open(solution_link, function(status) {
     if (status === 'success') {
-      state['solution_html'] = page.content();
+      console.log('Downloaded solution HTML with length:' + page.content.length);
+      state['solution_html'] = page.content;
       next_step();
     } else {
       fail('Failed to download solution.');
@@ -174,6 +181,7 @@ function process_puzzle(next_step) {
     state['puzzle_html'], 'w');
   fs.write('c:/temp/crosswords/' + basename + '_solution.html',
     state['solution_html'], 'w');
+  next_step();
 }
 
 console.log('Start of main');
@@ -185,9 +193,9 @@ login(function() {
       download_solution(function() {
         process_puzzle(function() {
           console.log('Success.');
+          phantom.exit();
         });
       });
     });
   });
 });
-
