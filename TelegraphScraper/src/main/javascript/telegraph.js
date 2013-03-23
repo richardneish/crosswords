@@ -177,9 +177,10 @@ function process_puzzle(next_step) {
   var basename = state['type'] + '_' + date.getFullYear() + '-' +
     monthString + '-' + dayString;
 
-  fs.write('c:/temp/crosswords/' + basename + '.html',
+  var basedir=env['TC_BASEDIR'];
+  fs.write(basedir + basename + '.html',
     state['puzzle_html'], 'w');
-  fs.write('c:/temp/crosswords/' + basename + '_solution.html',
+  fs.write(basedir + basename + '_solution.html',
     state['solution_html'], 'w');
   next_step();
 }
