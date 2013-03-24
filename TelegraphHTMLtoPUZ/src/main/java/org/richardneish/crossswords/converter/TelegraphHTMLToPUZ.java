@@ -62,7 +62,7 @@ public class TelegraphHTMLToPUZ {
       Collections.sort(clueList);
       List<String> clueStrings = new ArrayList<String>(clueList.size());
       for (Clue clue : clueList) {
-        log.info("Sorted Clue number " + clue.number + " " + clue.direction.name() + " is '" + clue.text + "'.");
+        log.fine("Sorted Clue number " + clue.number + " " + clue.direction.name() + " is '" + clue.text + "'.");
         clueStrings.add(clue.text);
       }
       puzzle.assignClues(clueStrings);
@@ -71,11 +71,6 @@ public class TelegraphHTMLToPUZ {
       title = title.replaceAll("\u00a0+", " ").trim();
       log.info("Puzzle title is '" + title + "'.");
       puzzle.setTitle(title);
-      //      String dateString = doc.select(".sectionhead").first().text().trim();
-      //      // Mon 25 Feb 13"
-      //      Date date = new SimpleDateFormat("EEE dd MMM yy").parse(dateString);
-      //      log.info("Date: " + date);
-      //      puzzle.setDate(date);
 
       return puzzle;
     } catch (Exception e) {
@@ -94,7 +89,7 @@ public class TelegraphHTMLToPUZ {
         int solutionNumber = Integer.parseInt(solution.parent().parent().parent().select("b").first().text());
         String solutionText = solution.text();
         Clue.Direction direction = i==0 ? Clue.Direction.ACROSS : Clue.Direction.DOWN;
-        log.info("Solution number " + solutionNumber + " " + direction.name() + " is '" + solutionText + "'.");
+        log.fine("Solution number " + solutionNumber + " " + direction.name() + " is '" + solutionText + "'.");
         // Store the solution.
         solutionList.add(new Clue(direction, solutionNumber, solutionText));
       }
@@ -119,7 +114,7 @@ public class TelegraphHTMLToPUZ {
         throw new PuzzleModelConversionException("Cannot find coordinates for solution " + solution.number);
       }
       Coordinate cellCoords = clueNumberMap.get(Integer.valueOf(solution.number)).clone();
-      log.info("Writing solution '" + solution + "' starting at location " + cellCoords + ".");
+      log.fine("Writing solution '" + solution + "' starting at location " + cellCoords + ".");
       for (int pos=0; pos<solution.text.length(); pos++) {
         if (cellStyles.get(cellCoords).isBlock()) {
           throw new PuzzleModelConversionException("Attempted to write solution '" +
@@ -133,7 +128,7 @@ public class TelegraphHTMLToPUZ {
               "' at location " + cellCoords + " but found '" +
               foundLetter + "'.");
         } else {
-          log.info("Putting letter '" + solutionChar + " at position " + cellCoords + ".");
+          log.fine("Putting letter '" + solutionChar + " at position " + cellCoords + ".");
           solutions.put(cellCoords.getX(), cellCoords.getY(), new PUZSolution(solutionChar));
         }
         switch (solution.direction) {
@@ -157,7 +152,12 @@ public class TelegraphHTMLToPUZ {
       PUZPuzzle puzzle = c.createPUZPuzzle(Jsoup.parse(new File(args[0]),null));
 
       // Add the solutions.
-      addSolutions(puzzle, Jsoup.parse(new File(args[1]),null));
+      try {
+        addSolutions(puzzle, Jsoup.parse(new File(args[1]),null));
+      } catch (Exception e) {
+        log.warning("Exception adding solution: " + e.getMessage());
+        log.warning("Continuing without solution.");
+      }
 
       // Write out the PUZ file.
       PUZPuzzleInputStream is = new PUZPuzzleInputStream(puzzle);
