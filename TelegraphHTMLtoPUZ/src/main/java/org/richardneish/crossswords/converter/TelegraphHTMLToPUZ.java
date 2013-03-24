@@ -36,7 +36,7 @@ public class TelegraphHTMLToPUZ {
       // Create the blank puzzle object.
       PUZPuzzle puzzle = new PUZPuzzle(width, height);
 
-      // Construct the grid
+      // Construct the grid.
       CoordinateMap<PUZCellStyle> cellStyles = puzzle.getCellStyles();
       for (int y=0; y<height; y++) {
         Elements cellImages = rows.get(y).select("td > img");
@@ -48,6 +48,7 @@ public class TelegraphHTMLToPUZ {
       }
       puzzle.assignClueNumbers();
 
+      // Add the clues.
       List<Clue> clueList = new ArrayList<Clue>();
       for (int i = 0; i<2; i++) {
         Elements clues = doc.select("html body table tbody tr td font b").get(i).parent().parent().select("clue");
@@ -67,6 +68,14 @@ public class TelegraphHTMLToPUZ {
       }
       puzzle.assignClues(clueStrings);
 
+      // Add default solution to get around the check in Jabberwordy library.
+      // TODO:Fix Jabberwordy to allow puzzle without solutions.
+      CoordinateMap<PUZSolution> solutions = puzzle.getSolutions();
+      for (Map.Entry<Coordinate,PUZSolution> entry : solutions.entrySet()) {
+        entry.getValue().setLetter('X');
+      }
+
+      // Add the puzzle title.
       String title = doc.select(".telegraph").first().text();
       title = title.replaceAll("\u00a0+", " ").trim();
       log.info("Puzzle title is '" + title + "'.");
