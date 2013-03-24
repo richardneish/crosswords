@@ -1,4 +1,3 @@
-var env=require('system').env;
 var fs=require('fs');
 var page = createPage();
 
@@ -24,12 +23,9 @@ function fail(msg) {
 }
 
 function snapshot(name) {
-  page.render('c:/temp/snapshots/' + name + '.png');
-  fs.write('c:/temp/snapshots/' + name + '.html', page.content, 'w');
-}
-
-function yesterday() {
-  return new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // Uncomment for debugging snapshots.
+//  page.render('c:/temp/snapshots/' + name + '.png');
+//  fs.write('c:/temp/snapshots/' + name + '.html', page.content, 'w');
 }
 
 function dateToString(date) {
@@ -60,8 +56,6 @@ function isLoggedIn() {
 }
 
 function login(next_step) {
-  var username=env['TC_USERNAME'];
-  var password=env['TC_PASSWORD'];
   if (null === username || '' === username) {
     fail('Username is missing');
   }
@@ -99,12 +93,12 @@ function login(next_step) {
 
 function search(next_step) {
   console.log('In search()');
-  var dateString = dateToString(state['date']);
-  console.log('Searching for puzzle type: ' + state['type'] +
+  var dateString = dateToString(date);
+  console.log('Searching for puzzle type: ' + type +
     ', for date: ' + dateString);
   // Cookies have been set by login(), so we can go straight to the crossword page.
   page.open('http://puzzles.telegraph.co.uk/site/crossword_puzzles_' +
-    state['type'], function(status) {
+    type, function(status) {
     console.log('Search page loaded.  Logged in:' + isLoggedIn());
     snapshot('search');
     state['puzzle_id'] = page.evaluate(function(dateString) {
@@ -126,7 +120,7 @@ function search(next_step) {
       }
       return null;
     }, dateString);
-    if (state['puzzle_id'] === null) {
+    if (state['puzzle_id'] === null || state['puzzle_id'] === '') {
       fail('Failed to find puzzle id.');
     }
     console.log('Got puzzle_id: [' + state['puzzle_id'] + ']');
@@ -137,7 +131,7 @@ function search(next_step) {
 function download_puzzle(next_step) {
   var puzzle_link='http://puzzles.telegraph.co.uk/site/print_crossword.php?id=' +
     state['puzzle_id'];
-  console.log('Downloading ' + state['type'] + ' crossword from link ' + puzzle_link);
+  console.log('Downloading ' + type + ' crossword from link ' + puzzle_link);
   page.open(puzzle_link, function(status) {
     if (status === 'success') {
       console.log('Downloaded puzzle HTML with length:' + page.content.length);
@@ -152,7 +146,7 @@ function download_puzzle(next_step) {
 function download_solution(next_step) {
   var solution_link='http://puzzles.telegraph.co.uk/site/print_crossword.php?id=' +
     state['puzzle_id'] + '&action=solution';
-  console.log('Downloading ' + state['type'] + ' solution from link ' + solution_link);
+  console.log('Downloading ' + type + ' solution from link ' + solution_link);
   page.open(solution_link, function(status) {
     if (status === 'success') {
       console.log('Downloaded solution HTML with length:' + page.content.length);
@@ -165,7 +159,6 @@ function download_solution(next_step) {
 }
 
 function process_puzzle(next_step) {
-  var date = state['date'];
   var monthString = new String(date.getMonth() + 1);
   if (monthString.length === 1) {
     monthString = '0' + monthString;
@@ -174,10 +167,9 @@ function process_puzzle(next_step) {
   if (dayString.length === 1) {
     dayString = '0' + dayString;
   }
-  var basename = state['type'] + '_' + date.getFullYear() + '-' +
+  var basename = type + '_' + date.getFullYear() + '-' +
     monthString + '-' + dayString;
 
-  var basedir=env['TC_BASEDIR'];
   fs.write(basedir + basename + '.html',
     state['puzzle_html'], 'w');
   fs.write(basedir + basename + '_solution.html',
@@ -185,10 +177,14 @@ function process_puzzle(next_step) {
   next_step();
 }
 
+var env=require('system').env;
+var username=env['TC_USERNAME'];
+var password=env['TC_PASSWORD'];
+var type=env['TC_TYPE'];
+var date=new Date(env['TC_DATE']);
+var basedir=env['TC_BASEDIR'];
 console.log('Start of main');
 login(function() {
-  state['type'] = 'cryptic';
-  state['date'] = yesterday(); 
   search(function() {
     download_puzzle(function() {
       download_solution(function() {
