@@ -8,7 +8,7 @@ export TC_TYPE=cryptic
 export TC_DATE=`date --date=@$((\`date +%s\` - 24 * 60 * 60)) +%Y-%m-%d`
 
 # Download yesterday's crosswords to temp folder.
-#phantomjs TelegraphScraper/src/main/javascript/telegraph.js
+phantomjs TelegraphScraper/src/main/javascript/telegraph.js
 
 # Convert downloaded HTML files to PUZ format.
 java -cp  \
@@ -17,3 +17,4 @@ java -cp  \
     /var/www/crosswords/html/${TC_TYPE}_${TC_DATE}.html \
     /var/www/crosswords/html/${TC_TYPE}_${TC_DATE}_solution.html \
     /var/www/crosswords/${TC_TYPE}_${TC_DATE}.puz
+
