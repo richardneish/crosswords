@@ -68,13 +68,6 @@ public class TelegraphHTMLToPUZ {
       }
       puzzle.assignClues(clueStrings);
 
-      // Add default solution to get around the check in Jabberwordy library.
-      // TODO:Fix Jabberwordy to allow puzzle without solutions.
-      CoordinateMap<PUZSolution> solutions = puzzle.getSolutions();
-      for (Map.Entry<Coordinate,PUZSolution> entry : solutions.entrySet()) {
-        entry.getValue().setLetter('X');
-      }
-
       // Add the puzzle title.
       String title = doc.select(".telegraph").first().text();
       title = title.replaceAll("\u00a0+", " ").trim();
@@ -165,7 +158,15 @@ public class TelegraphHTMLToPUZ {
         addSolutions(puzzle, Jsoup.parse(new File(args[1]),null));
       } catch (Exception e) {
         log.warning("Exception adding solution: " + e.getMessage());
-        log.warning("Continuing without solution.");
+        log.warning("Continuing with default solution.");
+
+        // Add default solution to get around the check in Jabberwordy library.
+        // TODO:Fix Jabberwordy to allow puzzle without solutions.
+        CoordinateMap<PUZSolution> solutions = puzzle.getSolutions();
+        for (Map.Entry<Coordinate,PUZSolution> entry : solutions.entrySet()) {
+          entry.getValue().setLetter('X');
+        }
+
       }
 
       // Write out the PUZ file.
