@@ -18,11 +18,14 @@
   <target name="compile" description="compile the Java source code to class files">
     <mkdir dir="classes"/>
     <javac
+      includeantruntime="false"
       srcdir="src/main/java"
       destdir="classes"
       classpathref="compile.classpath"
       debug="true"
       deprecation="true"
+      source="1.6"
+      target="1.6"
     />
   </target>
   <target name="run" depends="compile" description="Run the compiled Java code">

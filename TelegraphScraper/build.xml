@@ -30,8 +30,8 @@
       classname="org.richardneish.crosswords.scraper.TelegraphScraper"
       classpathref="runtime.classpath"
       fork="true">
-      <env key="TC_USERNAME" value="richardn@richardneish.org"/>
-      <env key="TC_PASSWORD" value="arCon3TE"/>
+      <env key="TC_USERNAME" value=""/>
+      <env key="TC_PASSWORD" value=""/>
       <arg value="2013-02-25" />
     </java>
   </target>
